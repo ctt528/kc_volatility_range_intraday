@@ -1,0 +1,167 @@
+using Elsystem.collections;
+using elsystem.drawingobjects;
+using elsystem;
+
+once clearprintlog;
+
+
+Input:
+	ATRLength(5),
+	num(100),
+	UniqueID( "+ 1SD"),
+	UniqueIDD( "- 1SD");
+Vars:
+	ATR(0),
+	ii(0),
+	RangeSD(0),
+	RangeStandardDev(0),
+	Counter(0),
+	Largerange(0),
+	Mediumrange(0),
+	Smallrange(0),
+	HorizontalLine MyHline(null),
+	HorizontalLine MyHhline (null),
+	HorizontalLine MyHhhline(null),
+	HorizontalLine MyHhhhline(null),
+	BNpoint LowSDpoint(null),
+	BNpoint HighSDpoint(null),
+	dtpoint dtPoint1 (null),
+	dtpoint dtPoint2 (null),
+	dtpoint dtPoint3 (null),
+	dtpoint dtPoint4 (null),
+	TextLabel text1 (null),
+	TextLabel text2(null),
+	TextLabel text3(null),
+	TextLabel text4(null),
+	Highpt(0),
+	Lowpt(0),
+	PercentageOneSD(0),
+	Percentage(0);
+	
+	
+	
+//Method void DrawHorizontalLine() 
+
+
+//try to make the atr not include the current bar.
+ATR = average(Truerange, atrlength)[1]; //dynamic Mean range. Middle of the road.
+
+			plot1(Truerange, !("range"));
+			plot2(ATR, !("ATR"));
+
+
+RangeSD = 0; //initialize
+For ii = 1 to num //not 0 because the current bar has not closed yet, so we shouldn't take its data and treat it like it like the others.
+Begin
+	RangeSD = RangeSD + Power((Truerange[ii]-ATR[ii]),2); //seperate logic(that's why it's indented.	
+	If ii = num then RangeStandardDev = Squareroot(RangeSD/num);
+end;
+
+//Within 1SD +- means "medium". Above 1SD means "Large",  Below 1SD means"small".  Please find probability a "small or "large" will occur.
+Counter = Counter + 1;
+	if Truerange > ATR + RangeStandardDev then Largerange = Largerange + 1;  
+	if Truerange <= ATR + RangeStandardDev and Truerange >= ATR - RangeStandardDev then mediumrange = mediumrange + 1;
+	if Truerange < ATR - RangeStandardDev then smallrange = smallrange + 1;
+
+Print("Large: ", largerange, "  Medium: ", mediumrange, " Smallrange: ", smallrange,"  Total: ", Largerange + mediumrange + smallrange, );  
+PercentageOneSD = iff((Largerange + mediumrange + smallrange <> 0), 100* (Mediumrange / (Largerange + mediumrange + smallrange)), 1);
+Percentage = 100 - (iff((Largerange + mediumrange + smallrange <> 0), 100* (smallrange / (Largerange + mediumrange + smallrange)), 1));
+//print("Percent the bars range will stay within the 2 horizontal lines:  ", PercentageoneSD,"%");
+Print("Percent the bars range will go BEYOND the closest horizontal lines:  ", percentage);
+
+{  ^ this means that there is a __% chance of a Large candle forming, and a ___% change that it will be a medium candle.
+	Most likely it will be a medium candle, so on the daily chart, just put horizontal lines on the currentdayLOW + (ATR+SD) and currentdayHIGH - (ATR-SD).
+		On top of both lines , put the sentence: "is 74% likely it will not go past this line." 	}
+		
+Highpt = Truelow[0] + ATR + RangeStandardDev;
+Lowpt = TrueHigh[0] - ATR - RangeStandardDev;		
+If Highpt <> Highpt[1] or Lowpt <> Lowpt[1] Then Condition1 = true else condition1 = false;		
+		
+			
+If Drawingobjects.items[10].count >= 4 and condition1 = true then
+Begin
+	Drawingobjects.Delete((DrawingObjects.items[10] astype Vector) [0] astype Drawingobject);
+	Drawingobjects.Delete((DrawingObjects.items[10] astype Vector) [0] astype Drawingobject); //delete both lines
+	Drawingobjects.Delete((DrawingObjects.items[10] astype Vector) [0] astype Drawingobject);
+	Drawingobjects.Delete((DrawingObjects.items[10] astype Vector) [0] astype Drawingobject);
+	
+	Drawingobjects.Delete((DrawingObjects.items[4] astype Vector) [0] astype Drawingobject);
+	Drawingobjects.Delete((DrawingObjects.items[4] astype Vector) [0] astype Drawingobject);//delete both texts
+	Drawingobjects.Delete((DrawingObjects.items[4] astype Vector) [0] astype Drawingobject);
+	Drawingobjects.Delete((DrawingObjects.items[4] astype Vector) [0] astype Drawingobject);
+End;		
+	 	
+		
+If condition1 = true or Drawingobjects.items[10].count = 0 then 
+begin
+//min range
+MyHhhline = Horizontalline.create(TrueLow[0] + (ATR - RangeStandardDev)); //Horizontalline 3
+	Drawingobjects.add(MyHhhline);
+	MyHhhline.tag = UniqueID astype string;
+	MyHhhline.color = elsystem.drawing.Color.gray;
+	MyHhhline.style = styletype.solid;
+	MyHhhline.weight = 0;
+	MyHhhline.Lock = true; 
+	
+	Text3 = TextLabel.Create(dtpoint3.Create(bardatetime[0],(TrueLow[0] + (ATR - RangeStandardDev))),numtostr(Percentage,2)+ !( "%" )); //Text3
+	DrawingObjects.Add(text3); 
+	text3.HStyle = 1;
+	text3.VStyle = VerticalStyle.Center;
+	text3.Font = elsystem.drawing.Font.Create( "Microsoft Sans Serif", 8, 0 );
+	text3.Lock = true;	
+
+	MyHhhhline = Horizontalline.create(TrueHigh[0] - (ATR - RangeStandardDev)); // Horizontalline 4
+	Drawingobjects.add(MyHhhhline);
+	MyHhhhline.tag = UniqueIDD astype string;
+	MyHhhhline.color = elsystem.drawing.Color.gray;
+	MyHhhhline.style = styletype.solid;
+	MyHhhhline.weight = 0;
+	MyHhhhline.Lock = true;
+	
+	Text4 = TextLabel.Create(dtpoint4.Create(bardatetime[0],TrueHigh[0] - (ATR - RangeStandardDev)),numtostr(Percentage,2)+ !( "%" )); //Text4
+	DrawingObjects.Add(Text4); 
+	text4.HStyle = 1;
+	text4.VStyle = VerticalStyle.Center;
+	text4.Font = elsystem.drawing.Font.Create( "Microsoft Sans Serif", 8, 0 );	 
+	text4.Lock = true;	
+// Max range
+	MyHline = Horizontalline.create(TrueLow[0] + ATR + RangeStandardDev); //Horizontalline 1
+	Drawingobjects.add(MyHline);
+	MyHline.tag = UniqueID astype string;
+	MyHline.color = elsystem.drawing.Color.gray;
+	MyHline.style = styletype.solid;
+	MyHline.weight = 0;
+	MyHline.Lock = true; 
+	
+	Text1 = TextLabel.Create(dtpoint1.Create(bardatetime[0],TrueLow[0] + ATR + RangeStandardDev),numtostr(PercentageOneSD,2)+ !( "%" )); //Text1
+	DrawingObjects.Add(text1); 
+	text1.HStyle = 1;
+	text1.VStyle = VerticalStyle.Center;
+	text1.Font = elsystem.drawing.Font.Create( "Microsoft Sans Serif", 8, 0 );
+	text1.Lock = true;	
+
+	MyHhline = Horizontalline.create(TrueHigh[0] - ATR - RangeStandardDev); // Horizontalline 2
+	Drawingobjects.add(MyHhline);
+	MyHhline.tag = UniqueIDD astype string;
+	MyHhline.color = elsystem.drawing.Color.gray;
+	MyHhline.style = styletype.solid;
+	MyHhline.weight = 0;
+	MyHhline.Lock = true;
+	
+	Text2 = TextLabel.Create(dtpoint2.Create(bardatetime[0],TrueHigh[0] - ATR - RangeStandardDev),numtostr(PercentageOneSD,2)+ !( "%" )); //Text2
+	DrawingObjects.Add(Text2); 
+	text2.HStyle = 1;
+	text2.VStyle = VerticalStyle.Center;
+	text2.Font = elsystem.drawing.Font.Create( "Microsoft Sans Serif", 8, 0 );	 
+	text2.Lock = true;
+End;
+
+//print("atr:  ", atr, "truehigh:  ", truehigh[0], "SD: ", Rangestandarddev);
+
+// I dont want it to delete and then redraw everyttick. I want it to check if it needs to delete and redraw, and check every tick(unless a low or high is changed, then the line will change.)counter = counter + 1;
+
+			
+			Plot3(ATR+RangeStandarddev, !("+1SD"));
+			Plot4(ATR-RangeStandarddev, !("-1SD"));
+			Plot5(ATR+RangeStandarddev+RangeStandarddev, !("+2SD"));
+			Plot6(ATR-RangeStandarddev-RangeStandarddev, !("-2SD"));	
